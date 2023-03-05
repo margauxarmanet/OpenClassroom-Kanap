@@ -8,25 +8,27 @@ if (keyProducts) {
       (product) =>
         `<article class="cart__item" data-id="${product.id}" data-color="${product.color}">
             <div class="cart__item__img">
-                <img src="${product.imageUrl}" alt="${product.alTxt}">
+              <a href="./product.html?id=${product.id}">
+                  <img src="${product.imageUrl}" alt="${product.alTxt}">
+              </a>
             </div>
             <div class="cart__item__content">
-                <div class="cart__item__content__description">
+              <div class="cart__item__content__description">
                 <h2>${product.name}</h2>
                 <p>${product.color}</p>
                 <p>${product.price} €</p>
-                </div>
+              </div>
                 <div class="cart__item__content__settings">
-                <div class="cart__item__content__settings__quantity">
+                  <div class="cart__item__content__settings__quantity">
                     <p>Qté : </p>
                     <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="${product.quantity}">
+                  </div>
+                  <div class="cart__item__content__settings__delete">
+                      <p class="deleteItem">Supprimer</p>
+                  </div>
                 </div>
-                <div class="cart__item__content__settings__delete">
-                    <p class="deleteItem">Supprimer</p>
-                </div>
-                </div>
-            </div>
-        </article>`
+              </div>
+          </article>`
     )
     .join("");
 
@@ -80,4 +82,12 @@ if (keyProducts) {
     });
   });
 }
+
+// calcul et affichage des totaux.
 // gestion du formulaire.
+
+/* Explications pour la présentation: 
+<a href="">image du produit</a>
+
+J'ai pris la liberté de rendre les produits dans le panier cliquables pour faciliter la navigation sur le site.
+*/
