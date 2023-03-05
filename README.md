@@ -1,6 +1,14 @@
-# Kanap #
+# Kanap
 
-This is the front end and back end server for Project 5 of the Web Developer path.
+Check-out my work in : front > js
+
+This is a school project that gave me the oportunity to learn the following technical points : 
+- the use of the API (GET, POST);
+- the DOM (adding, deleting and modifying elements);
+- the use of URLSearchParams;
+- using localStorage.
+
+The only thing I can use is Javascript and I am not allowed to modify any of the files given to me. 
 
 ### Back end Prerequisites ###
 
