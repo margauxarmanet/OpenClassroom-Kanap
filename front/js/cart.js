@@ -1,4 +1,4 @@
-const keyProducts = JSON.parse(localStorage.getItem("products"));
+let keyProducts = JSON.parse(localStorage.getItem("products"));
 const cart = document.querySelector("#cart__items");
 
 // affiche les produits dans le panier.
@@ -42,7 +42,7 @@ if (keyProducts) {
   const quantity = document.querySelectorAll(".itemQuantity");
   const deleteItem = document.querySelectorAll(".deleteItem");
 
-  // met à jour des quantités :
+  // change la quantité :
   quantity.forEach((input) => {
     input.addEventListener("change", (event) => {
       event.preventDefault();
@@ -62,6 +62,7 @@ if (keyProducts) {
       }
 
       localStorage.setItem("products", JSON.stringify(keyProducts));
+      updateTotalQuantity();
     });
   });
 
@@ -72,18 +73,37 @@ if (keyProducts) {
 
       const article = deleteButton.closest(".cart__item");
       const { id, color } = article.dataset;
-      let productInStorage = keyProducts.find((inStorage) => {
-        return inStorage.id == id && inStorage.color == color;
+      keyProducts = keyProducts.filter((inStorage) => {
+        return !(inStorage.id == id && inStorage.color == color);
       });
 
-      keyProducts.splice(productInStorage, 1);
       localStorage.setItem("products", JSON.stringify(keyProducts));
+      updateTotalQuantity();
       article.remove();
     });
   });
+
+  // Totaux des quantités et des prix.
+  const updateTotalQuantity = () => {
+    const keyProducts = JSON.parse(localStorage.getItem("products"));
+    let totalQuantity = 0;
+    let totalPrice = [];
+    keyProducts.forEach((product) => {
+      totalQuantity += parseInt(product.quantity);
+      const productPrice = parseInt(product.quantity) * parseInt(product.price);
+      totalPrice.push(productPrice);
+    });
+    document.querySelector("#totalQuantity").textContent = totalQuantity;
+    document.querySelector("#totalPrice").textContent = totalPrice.reduce(
+      (a, b) => a + b,
+      0
+    );
+  };
+
+  // Affiche la quantité au chargement de la page.
+  updateTotalQuantity();
 }
 
-// calcul et affichage des totaux.
 // gestion du formulaire.
 
 /* Explications pour la présentation: 
