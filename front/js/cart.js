@@ -1,5 +1,6 @@
 let keyProducts = JSON.parse(localStorage.getItem("products"));
 const cart = document.querySelector("#cart__items");
+const orderButton = document.querySelector("#order");
 
 // affiche les produits dans le panier.
 if (keyProducts) {
@@ -33,8 +34,11 @@ if (keyProducts) {
     .join("");
 
   cart.innerHTML = productsInCart;
+  orderButton.addEventListener("click", orderButtonClicked);
 } else {
   cart.innerHTML = `<p style="text-align: center">Votre panier Kanap est vide.</p>`;
+  orderButton.disabled = true;
+  orderButton.style.cursor = "not-allowed";
 }
 
 // gestion des produits dans le panier.
@@ -42,7 +46,7 @@ if (keyProducts) {
   const quantity = document.querySelectorAll(".itemQuantity");
   const deleteItem = document.querySelectorAll(".deleteItem");
 
-  // change la quantité :
+  // modifie la quantité :
   quantity.forEach((input) => {
     input.addEventListener("change", (event) => {
       event.preventDefault();
@@ -83,7 +87,7 @@ if (keyProducts) {
     });
   });
 
-  // Totaux des quantités et des prix.
+  // Calculs des quantités et des prix.
   const updateTotalQuantity = () => {
     const keyProducts = JSON.parse(localStorage.getItem("products"));
     let totalQuantity = 0;
@@ -104,7 +108,107 @@ if (keyProducts) {
   updateTotalQuantity();
 }
 
-// gestion du formulaire.
+// création du formulaire.
+const form = document.querySelector(".cart__order__form");
+
+const inputs = [
+  {
+    inputName: "firstName",
+    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
+    errorMsg: "Veuillez entrer un prénom valide, ex: Sandrine.",
+    errorMsgElement: document.querySelector("#firstNameErrorMsg"),
+  },
+  {
+    inputName: "lastName",
+    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
+    errorMsg: "Veuillez entrer un nom valide, ex: Dubois.",
+    errorMsgElement: document.querySelector("#lastNameErrorMsg"),
+  },
+  {
+    inputName: "address",
+    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
+    errorMsg: "Veuillez entrer une adresse valide, ex: 5 Rue de la République.",
+    errorMsgElement: document.querySelector("#addressErrorMsg"),
+  },
+  {
+    inputName: "city",
+    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
+    errorMsg: "Veuillez entrer une ville valide ex: Lyon.",
+    errorMsgElement: document.querySelector("#cityErrorMsg"),
+  },
+  {
+    inputName: "email",
+    pattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+    errorMsg:
+      "Veuillez entrer une adresse email valide ex: sandrine-dubois@email.com",
+    errorMsgElement: document.querySelector("#emailErrorMsg"),
+  },
+];
+
+// Validation du formulaire
+function formValidation() {
+  let formIsValid = true;
+
+  inputs.forEach((input) => {
+    const { inputName, pattern, errorMsgElement } = input;
+    const inputValue = form.elements[inputName].value.trim();
+
+    if (!pattern.test(inputValue) || !inputValue === "") {
+      formIsValid = false;
+      errorMsgElement.textContent = input.errorMsg;
+    } else {
+      errorMsgElement.textContent = "";
+    }
+  });
+  return formIsValid;
+}
+
+// Envoi la commande.
+function orderButtonClicked(event) {
+  event.preventDefault();
+
+  let formIsValid = formValidation();
+  const productId = [];
+
+  if (formIsValid) {
+    keyProducts.map((product) => {
+      productId.push(product.id);
+    });
+
+    const order = {
+      contact: {
+        firstName: firstName.value,
+        lastName: lastName.value,
+        address: address.value,
+        city: city.value,
+        email: email.value,
+      },
+      products: productId,
+    };
+
+    const options = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(order),
+    };
+    fetch("http://localhost:3000/api/products/order", options)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("POST request successful:", data);
+        window.location.href = `confirmation.html?orderId=${data.orderId}`;
+        localStorage.clear();
+      })
+      .catch((err) => {
+        console.log("Erreur Fetch product.js", err);
+        alert(
+          "Une erreur s'est produite, nous n'avons pas pu enregistrer votre commande."
+        );
+      });
+  }
+}
 
 /* Explications pour la présentation: 
 <a href="">image du produit</a>
