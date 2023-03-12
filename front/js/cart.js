@@ -1,177 +1,140 @@
-let keyProducts = JSON.parse(localStorage.getItem("products"));
+// Objectif (1): Affiche le(s) produit(s) sur la page.
+// Objectif (2): Calculer et affiche les totaux.
+// Objectif (3): Au clic, changer la quantité d'un produit dans le panier.
+// Objectif (4): Au clic, supprimer un produit dans le panier.
+// Objectif (5): Au clic, envoyer la commande au serveur.
+
 const cart = document.querySelector("#cart__items");
 const orderButton = document.querySelector("#order");
 
-// affiche les produits dans le panier.
+let keyProducts = JSON.parse(localStorage.getItem("products"));
+
 if (keyProducts) {
+  // (1) Affiche les produits dans le panier.
+  displayProductsInCart(keyProducts);
+
+  // (2) Calcule et affiche les totaux.
+  setTotals();
+
+  // (3) Change la quantité d'un produit dans le panier.
+  document.querySelectorAll(".itemQuantity").forEach((input) => {
+    input.addEventListener("change", (event) => {
+      event.preventDefault();
+      updateQuantity(input);
+    });
+  });
+
+  // (4) Supprime un produit dans le panier.
+  document.querySelectorAll(".deleteItem").forEach((deleteButton) => {
+    deleteButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      deleteProductFormCart(deleteButton);
+    });
+  });
+
+  // (5) Envoi la commande au serveur.
+  orderButton.addEventListener("click", orderButtonClicked);
+} else {
+  orderButton.disabled = true;
+  orderButton.style.cursor = "not-allowed";
+  cart.innerHTML = `<p style="text-align: center">Votre panier Kanap est vide.</p>`;
+}
+
+// -------------------------------------------------------------------
+// Fonctions :
+
+// (1) Affiche les produits dans le panier.
+function displayProductsInCart(keyProducts) {
   const productsInCart = keyProducts
     .map(
       (product) =>
         `<article class="cart__item" data-id="${product.id}" data-color="${product.color}">
-            <div class="cart__item__img">
-              <a href="./product.html?id=${product.id}">
-                  <img src="${product.imageUrl}" alt="${product.alTxt}">
-              </a>
+          <div class="cart__item__img">
+            <a href="./product.html?id=${product.id}">
+                <img src="${product.imageUrl}" alt="${product.alTxt}">
+            </a>
+          </div>
+          <div class="cart__item__content">
+            <div class="cart__item__content__description">
+              <h2>${product.name}</h2>
+              <p>${product.color}</p>
+              <p>${product.price} €</p>
             </div>
-            <div class="cart__item__content">
-              <div class="cart__item__content__description">
-                <h2>${product.name}</h2>
-                <p>${product.color}</p>
-                <p>${product.price} €</p>
-              </div>
-                <div class="cart__item__content__settings">
-                  <div class="cart__item__content__settings__quantity">
-                    <p>Qté : </p>
-                    <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="${product.quantity}">
-                  </div>
-                  <div class="cart__item__content__settings__delete">
-                      <p class="deleteItem">Supprimer</p>
-                  </div>
+              <div class="cart__item__content__settings">
+                <div class="cart__item__content__settings__quantity">
+                  <p>Qté : </p>
+                  <input type="number" class="itemQuantity" name="itemQuantity" min="1" max="100" value="${product.quantity}">
+                </div>
+                <div class="cart__item__content__settings__delete">
+                    <p class="deleteItem">Supprimer</p>
                 </div>
               </div>
-          </article>`
+            </div>
+        </article>`
     )
     .join("");
 
   cart.innerHTML = productsInCart;
-  orderButton.addEventListener("click", orderButtonClicked);
-} else {
-  cart.innerHTML = `<p style="text-align: center">Votre panier Kanap est vide.</p>`;
-  orderButton.disabled = true;
-  orderButton.style.cursor = "not-allowed";
 }
 
-// gestion des produits dans le panier.
-if (keyProducts) {
-  const quantity = document.querySelectorAll(".itemQuantity");
-  const deleteItem = document.querySelectorAll(".deleteItem");
+// (2) Calcule et affiche les totaux.
+function setTotals() {
+  const { totalQuantity, totalPrice } = keyProducts.reduce(
+    (sum, product) => {
+      const { quantity, price } = product;
+      // (sum et totalQuantity = la somme de toutes les quantités)
+      sum.totalQuantity += parseFloat(quantity);
+      // (sum et totalPrice = la somme des quantités x les prix)
+      sum.totalPrice += parseFloat(quantity) * parseFloat(price);
+      return sum;
+    },
+    { totalQuantity: 0, totalPrice: 0 }
+  );
 
-  // modifie la quantité :
-  quantity.forEach((input) => {
-    input.addEventListener("change", (event) => {
-      event.preventDefault();
-
-      const article = input.closest(".cart__item");
-      const { id, color } = article.dataset;
-      let productInStorage = keyProducts.find((inStorage) => {
-        return inStorage.id == id && inStorage.color == color;
-      });
-
-      if (input.value <= 100) {
-        productInStorage.quantity = input.value;
-      } else {
-        alert(
-          `Vous pouvez commander au maximum 100 ${productInStorage.name} de couleur ${productInStorage.color}.`
-        );
-      }
-
-      localStorage.setItem("products", JSON.stringify(keyProducts));
-      updateTotalQuantity();
-    });
-  });
-
-  // supprime le produit :
-  deleteItem.forEach((deleteButton) => {
-    deleteButton.addEventListener("click", (event) => {
-      event.preventDefault();
-
-      const article = deleteButton.closest(".cart__item");
-      const { id, color } = article.dataset;
-      keyProducts = keyProducts.filter((inStorage) => {
-        return !(inStorage.id == id && inStorage.color == color);
-      });
-
-      localStorage.setItem("products", JSON.stringify(keyProducts));
-      updateTotalQuantity();
-      article.remove();
-    });
-  });
-
-  // Calculs des quantités et des prix.
-  const updateTotalQuantity = () => {
-    const keyProducts = JSON.parse(localStorage.getItem("products"));
-    let totalQuantity = 0;
-    let totalPrice = [];
-    keyProducts.forEach((product) => {
-      totalQuantity += parseInt(product.quantity);
-      const productPrice = parseInt(product.quantity) * parseInt(product.price);
-      totalPrice.push(productPrice);
-    });
-    document.querySelector("#totalQuantity").textContent = totalQuantity;
-    document.querySelector("#totalPrice").textContent = totalPrice.reduce(
-      (a, b) => a + b,
-      0
-    );
-  };
-
-  // Affiche la quantité au chargement de la page.
-  updateTotalQuantity();
+  // insertion des données dans la page.
+  document.querySelector("#totalQuantity").textContent = totalQuantity;
+  document.querySelector("#totalPrice").textContent = totalPrice;
 }
 
-// création du formulaire.
-const form = document.querySelector(".cart__order__form");
+// (3) Change la quantité d'un produit dans le panier.
+function updateQuantity(input) {
+  const { id, color } = input.closest(".cart__item").dataset;
+  const productInStorage = keyProducts.find(
+    (inStorage) => inStorage.id == id && inStorage.color == color
+  );
 
-const inputs = [
-  {
-    inputName: "firstName",
-    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
-    errorMsg: "Veuillez entrer un prénom valide, ex: Sandrine.",
-    errorMsgElement: document.querySelector("#firstNameErrorMsg"),
-  },
-  {
-    inputName: "lastName",
-    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
-    errorMsg: "Veuillez entrer un nom valide, ex: Dubois.",
-    errorMsgElement: document.querySelector("#lastNameErrorMsg"),
-  },
-  {
-    inputName: "address",
-    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
-    errorMsg: "Veuillez entrer une adresse valide, ex: 5 Rue de la République.",
-    errorMsgElement: document.querySelector("#addressErrorMsg"),
-  },
-  {
-    inputName: "city",
-    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
-    errorMsg: "Veuillez entrer une ville valide ex: Lyon.",
-    errorMsgElement: document.querySelector("#cityErrorMsg"),
-  },
-  {
-    inputName: "email",
-    pattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
-    errorMsg:
-      "Veuillez entrer une adresse email valide ex: sandrine-dubois@email.com",
-    errorMsgElement: document.querySelector("#emailErrorMsg"),
-  },
-];
+  input.value <= 100
+    ? (productInStorage.quantity = input.value)
+    : alert(
+        `Vous pouvez commander au maximum 100 ${productInStorage.name} de cette couleur.`
+      );
 
-// Validation du formulaire
-function formValidation() {
-  let formIsValid = true;
-
-  inputs.forEach((input) => {
-    const { inputName, pattern, errorMsgElement } = input;
-    const inputValue = form.elements[inputName].value.trim();
-
-    if (!pattern.test(inputValue) || !inputValue === "") {
-      formIsValid = false;
-      errorMsgElement.textContent = input.errorMsg;
-    } else {
-      errorMsgElement.textContent = "";
-    }
-  });
-  return formIsValid;
+  localStorage.setItem("products", JSON.stringify(keyProducts));
+  setTotals();
 }
 
-// Envoi la commande.
+// (4) Supprime un produit dans le panier.
+function deleteProductFormCart(deleteButton) {
+  const { id, color } = deleteButton.closest(".cart__item").dataset;
+  keyProducts = keyProducts.filter((inStorage) => {
+    return !(inStorage.id == id && inStorage.color == color);
+  });
+
+  localStorage.setItem("products", JSON.stringify(keyProducts));
+  setTotals();
+  deleteButton.closest(".cart__item").remove();
+}
+
+// (5) Envoi la commande au serveur.
 function orderButtonClicked(event) {
   event.preventDefault();
 
   let formIsValid = formValidation();
-  const productId = [];
 
   if (formIsValid) {
-    keyProducts.map((product) => {
+    const productId = [];
+
+    keyProducts.forEach((product) => {
       productId.push(product.id);
     });
 
@@ -210,8 +173,64 @@ function orderButtonClicked(event) {
   }
 }
 
-/* Explications pour la présentation: 
-<a href="">image du produit</a>
+// -------------------------------------------------------------------
+// "Sous-Fonctions" de (5) :
+const form = document.querySelector(".cart__order__form");
 
-J'ai pris la liberté de rendre les produits dans le panier cliquables pour faciliter la navigation sur le site.
-*/
+// Validation du formulaire
+function formValidation() {
+  let formIsValid = true;
+
+  inputs.forEach((input) => {
+    const { inputName, pattern, errorMsgElement } = input;
+    const inputValue = form.elements[inputName].value.trim();
+
+    if (!pattern.test(inputValue) || !inputValue === "") {
+      formIsValid = false;
+      errorMsgElement.textContent = input.errorMsg;
+    } else {
+      errorMsgElement.textContent = "";
+    }
+  });
+  return formIsValid;
+}
+
+// Données spécifiques à chaque inputs.
+const inputs = [
+  {
+    inputName: "firstName",
+    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
+    errorMsg: "Veuillez entrer un prénom valide, ex: Sandrine.",
+    errorMsgElement: document.querySelector("#firstNameErrorMsg"),
+  },
+  {
+    inputName: "lastName",
+    pattern: /^[a-zA-ZÀ-ÖØ-öø-ÿ-]+$/,
+    errorMsg: "Veuillez entrer un nom valide, ex: Dubois.",
+    errorMsgElement: document.querySelector("#lastNameErrorMsg"),
+  },
+  {
+    inputName: "address",
+    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
+    errorMsg: "Veuillez entrer une adresse valide, ex: 5 Rue de la République.",
+    errorMsgElement: document.querySelector("#addressErrorMsg"),
+  },
+  {
+    inputName: "city",
+    pattern: /^[a-zA-Z0-9À-ÖØ-öø-ÿ\s-]+$/,
+    errorMsg: "Veuillez entrer une ville valide ex: Lyon.",
+    errorMsgElement: document.querySelector("#cityErrorMsg"),
+  },
+  {
+    inputName: "email",
+    pattern: /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+    errorMsg:
+      "Veuillez entrer une adresse email valide ex: sandrine-dubois@email.com",
+    errorMsgElement: document.querySelector("#emailErrorMsg"),
+  },
+];
+
+// -------------------------------------------------------------------
+/* Note :
+J'ai pris la liberté de rendre les produits dans le panier cliquables
+afin de faciliter la navigation sur le site (comme sur amazon.fr) */
